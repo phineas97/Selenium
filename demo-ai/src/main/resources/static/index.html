@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<body>
+<input type="text" id="userInput" placeholder="Enter your prompt">
+<button onclick="sendRequest()">Submit</button>
+<div id="response"></div>
+
+<script>
+    function sendRequest() {
+    const input = document.getElementById("userInput").value;
+    fetch('/ai', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userInput: input })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        return response.text();
+    })
+    .then(data => document.getElementById("response").innerText = data)
+    .catch(error => console.error("Error:", error));
+}
+</script>
+</body>
+</html>

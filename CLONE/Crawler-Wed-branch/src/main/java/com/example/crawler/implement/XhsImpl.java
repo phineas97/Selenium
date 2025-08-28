@@ -16,6 +16,7 @@ public class XhsImpl implements XHSService {
     String k = "";
     String maintext = "";
     String title = "";
+    String publishTime = "";
 
     private final OkHttpClient okHttpClient = new OkHttpClient();
 
@@ -30,12 +31,18 @@ public class XhsImpl implements XHSService {
 
         ExtractTitle(document);
         ExtractMaintext(document);
-        ExtractKeywords(document);
+        ExtractPublishTime(document);
 
         Info info = new Info();
         info.setTitle(title);
         info.setMaintext(maintext);
         info.setKeywords(k);
+        info.setPublishTime(publishTime);
+        
+        // 小红书不支持评论数和点赞数，设置为空值
+        info.setCommentCount("");
+        info.setLikeCount("");
+        
         return info;
     }
 
@@ -63,13 +70,40 @@ public class XhsImpl implements XHSService {
         }
     }
 
-    private void ExtractKeywords (Document document) {
-        Element keyword = document.selectFirst("meta[name=keywords]");
-        k = "";
-        if (keyword != null) {
-            k = keyword.attr("content").trim();
-        } else {
-            k = "无关键词";
+    private void ExtractPublishTime(Document document) {
+        try {
+            // 根据提供的HTML结构：<span class="date" selected-disabled-search="" data-v-610be4fa="">编辑于 08-12 云南</span>
+            Element timeElement = document.selectFirst(".date");
+            if (timeElement != null) {
+                publishTime = timeElement.text().trim();
+            }
+            
+            if (publishTime == null || publishTime.isEmpty()) {
+                // 备用选择器，尝试其他可能的时间元素
+                String[] timeSelectors = {
+                    ".bottom-container .date",
+                    "[class*='date']",
+                    "[class*='time']",
+                    ".publish-time",
+                    ".create-time"
+                };
+                
+                for (String selector : timeSelectors) {
+                    Element element = document.selectFirst(selector);
+                    if (element != null && !element.text().trim().isEmpty()) {
+                        publishTime = element.text().trim();
+                        break;
+                    }
+                }
+            }
+            
+            if (publishTime == null || publishTime.isEmpty()) {
+                publishTime = "未知时间";
+            }
+            
+        } catch (Exception e) {
+            System.out.println("提取小红书发布时间失败：" + e.getMessage());
+            publishTime = "未知时间";
         }
     }
 

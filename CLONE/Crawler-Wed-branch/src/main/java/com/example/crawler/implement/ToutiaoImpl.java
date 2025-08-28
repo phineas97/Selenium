@@ -20,6 +20,11 @@ public class ToutiaoImpl implements ToutiaoService {
     String k = "";
     String maintext = "";
     String title = "";
+    
+    // 新增字段
+    String publishTime = "";
+    String commentCount = "";
+    String likeCount = "";
 
     private ChromeOptions createChromeOptions() {
         // 设置WebDriver路径
@@ -59,11 +64,6 @@ public class ToutiaoImpl implements ToutiaoService {
             // 使用配置好的ChromeOptions创建WebDriver
             ChromeOptions options = createChromeOptions();
             
-            // 如果需要代理，可以在这里配置
-            // Proxy proxy = new Proxy();
-            // proxy.setSocksProxy("proxy-server:port");
-            // options.setProxy(proxy);
-            
             driver = new ChromeDriver(options);
             
             // 设置页面加载超时
@@ -84,6 +84,11 @@ public class ToutiaoImpl implements ToutiaoService {
             ExtractTitle(driver);
             ExtractMaintext(driver, wait);
             ExtractKeywords(driver);
+            
+            // 提取新增字段
+            ExtractPublishTime(driver);
+            ExtractCommentCount(driver);
+            ExtractLikeCount(driver);
 
         } catch (Exception e) {
             System.out.println("提取今日头条内容时发生错误：" + e.getMessage());
@@ -93,6 +98,9 @@ public class ToutiaoImpl implements ToutiaoService {
             title = "提取失败";
             maintext = "无法获取正文内容，错误：" + e.getMessage();
             k = "无关键词";
+            publishTime = "未知时间";
+            commentCount = "0";
+            likeCount = "0";
             
         } finally {
             // 确保关闭浏览器
@@ -109,6 +117,9 @@ public class ToutiaoImpl implements ToutiaoService {
         info.setTitle(title);
         info.setMaintext(maintext);
         info.setKeywords(k);
+        info.setPublishTime(publishTime);
+        info.setCommentCount(commentCount);
+        info.setLikeCount(likeCount);
         return info;
     }
     private void ExtractTitle(WebDriver driver) {
@@ -198,6 +209,156 @@ public class ToutiaoImpl implements ToutiaoService {
         } catch (Exception e) {
             System.out.println("提取关键词失败：" + e.getMessage());
             k = "无关键词";
+        }
+    }
+
+    // 提取发布时间
+    private void ExtractPublishTime(WebDriver driver) {
+        try {
+            // 根据提供的HTML结构：<div class="article-meta"><span>2025-08-28 10:16</span>
+            WebElement timeElement = driver.findElement(By.cssSelector(".article-meta span"));
+            if (timeElement != null) {
+                publishTime = timeElement.getText().trim();
+            }
+            
+            if (publishTime == null || publishTime.isEmpty()) {
+                // 备用选择器
+                String[] timeSelectors = {
+                    ".article-meta span:first-child",
+                    "[class*='time']",
+                    "[class*='date']",
+                    ".publish-time",
+                    ".time"
+                };
+                
+                for (String selector : timeSelectors) {
+                    try {
+                        WebElement element = driver.findElement(By.cssSelector(selector));
+                        if (element != null && !element.getText().trim().isEmpty()) {
+                            publishTime = element.getText().trim();
+                            break;
+                        }
+                    } catch (Exception e) {
+                        // 继续尝试下一个选择器
+                    }
+                }
+            }
+            
+            if (publishTime == null || publishTime.isEmpty()) {
+                publishTime = "未知时间";
+            }
+            
+        } catch (Exception e) {
+            System.out.println("提取发布时间失败：" + e.getMessage());
+            publishTime = "未知时间";
+        }
+    }
+
+    // 提取评论数
+    private void ExtractCommentCount(WebDriver driver) {
+        try {
+            // 根据提供的HTML结构：<div class="title">评论 <span>17</span></div>
+            WebElement commentElement = driver.findElement(By.cssSelector(".title span"));
+            if (commentElement != null && commentElement.getText().matches("\\d+")) {
+                commentCount = commentElement.getText().trim();
+            }
+            
+            if (commentCount == null || commentCount.isEmpty() || !commentCount.matches("\\d+")) {
+                // 备用选择器
+                String[] commentSelectors = {
+                    ".comment-count",
+                    "[class*='comment'] span",
+                    ".title:contains('评论') span",
+                    "[aria-label*='评论']"
+                };
+                
+                for (String selector : commentSelectors) {
+                    try {
+                        WebElement element = driver.findElement(By.cssSelector(selector));
+                        if (element != null) {
+                            String text = element.getText().trim();
+                            // 提取数字
+                            String numbers = text.replaceAll("[^0-9]", "");
+                            if (!numbers.isEmpty()) {
+                                commentCount = numbers;
+                                break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // 继续尝试下一个选择器
+                    }
+                }
+            }
+            
+            if (commentCount == null || commentCount.isEmpty() || !commentCount.matches("\\d+")) {
+                commentCount = "0";
+            }
+            
+        } catch (Exception e) {
+            System.out.println("提取评论数失败：" + e.getMessage());
+            commentCount = "0";
+        }
+    }
+
+    // 提取点赞数
+    private void ExtractLikeCount(WebDriver driver) {
+        try {
+            // 根据提供的HTML结构：<div tabindex="0" role="button" aria-label="点赞112" ... <span>112</span></div>
+            WebElement likeElement = driver.findElement(By.cssSelector(".detail-like span"));
+            if (likeElement != null && likeElement.getText().matches("\\d+")) {
+                likeCount = likeElement.getText().trim();
+            }
+            
+            if (likeCount == null || likeCount.isEmpty() || !likeCount.matches("\\d+")) {
+                // 尝试通过aria-label获取
+                try {
+                    WebElement ariaElement = driver.findElement(By.cssSelector("[aria-label*='点赞']"));
+                    if (ariaElement != null) {
+                        String ariaLabel = ariaElement.getAttribute("aria-label");
+                        // 从"点赞112"中提取数字
+                        String numbers = ariaLabel.replaceAll("[^0-9]", "");
+                        if (!numbers.isEmpty()) {
+                            likeCount = numbers;
+                        }
+                    }
+                } catch (Exception e) {
+                    // 忽略
+                }
+            }
+            
+            if (likeCount == null || likeCount.isEmpty() || !likeCount.matches("\\d+")) {
+                // 备用选择器
+                String[] likeSelectors = {
+                    ".like-count",
+                    "[class*='like'] span",
+                    "[class*='digg'] span",
+                    ".digg-count"
+                };
+                
+                for (String selector : likeSelectors) {
+                    try {
+                        WebElement element = driver.findElement(By.cssSelector(selector));
+                        if (element != null) {
+                            String text = element.getText().trim();
+                            String numbers = text.replaceAll("[^0-9]", "");
+                            if (!numbers.isEmpty()) {
+                                likeCount = numbers;
+                                break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // 继续尝试下一个选择器
+                    }
+                }
+            }
+            
+            if (likeCount == null || likeCount.isEmpty() || !likeCount.matches("\\d+")) {
+                likeCount = "0";
+            }
+            
+        } catch (Exception e) {
+            System.out.println("提取点赞数失败：" + e.getMessage());
+            likeCount = "0";
         }
     }
 

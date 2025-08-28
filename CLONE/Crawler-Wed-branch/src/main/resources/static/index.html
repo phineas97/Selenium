@@ -262,20 +262,36 @@
     <div class="error-message" id="error-message"></div>
     <div class="success-message" id="success-message"></div>
 
-    <div class="result-section" id="result-section">
+        <div class="result-section" id="result-section">
       <div class="result-item">
         <div class="result-label">📝 标题</div>
         <div class="result-content" id="title-content"></div>
       </div>
-
+      
       <div class="result-item">
         <div class="result-label">📄 正文内容</div>
         <div class="result-content" id="maintext-content"></div>
       </div>
-
+      
       <div class="result-item">
         <div class="result-label">🏷️ 关键词</div>
         <div class="result-content" id="keywords-content"></div>
+      </div>
+      
+      <!-- 今日头条专用字段 -->
+      <div class="result-item" id="publish-time-item" style="display: none;">
+        <div class="result-label">⏰ 发布时间</div>
+        <div class="result-content" id="publish-time-content"></div>
+      </div>
+      
+      <div class="result-item" id="comment-count-item" style="display: none;">
+        <div class="result-label">💬 评论数</div>
+        <div class="result-content" id="comment-count-content"></div>
+      </div>
+      
+      <div class="result-item" id="like-count-item" style="display: none;">
+        <div class="result-label">👍 点赞数</div>
+        <div class="result-content" id="like-count-content"></div>
       </div>
     </div>
   </div>
@@ -293,6 +309,14 @@
       const titleContent = document.getElementById('title-content');
       const maintextContent = document.getElementById('maintext-content');
       const keywordsContent = document.getElementById('keywords-content');
+      
+      // 新增字段元素
+      const publishTimeItem = document.getElementById('publish-time-item');
+      const publishTimeContent = document.getElementById('publish-time-content');
+      const commentCountItem = document.getElementById('comment-count-item');
+      const commentCountContent = document.getElementById('comment-count-content');
+      const likeCountItem = document.getElementById('like-count-item');
+      const likeCountContent = document.getElementById('like-count-content');
 
       // 隐藏所有消息
       function hideMessages() {
@@ -315,6 +339,26 @@
           successMessage.style.display = 'block';
       }
 
+      // 检查是否为今日头条URL
+      function isToutiaoUrl(url) {
+          try {
+              const urlObj = new URL(url);
+              return urlObj.hostname === 'www.toutiao.com';
+          } catch (_) {
+              return false;
+          }
+      }
+
+      // 检查是否为小红书URL
+      function isXhsUrl(url) {
+          try {
+              const urlObj = new URL(url);
+              return urlObj.hostname === 'www.xiaohongshu.com';
+          } catch (_) {
+              return false;
+          }
+      }
+
       // 显示结果
       function showResult(data) {
           // 只隐藏错误和成功消息，不隐藏结果区域
@@ -324,6 +368,39 @@
           titleContent.textContent = data.title || '无标题';
           maintextContent.textContent = data.maintext || '无正文内容';
           keywordsContent.textContent = data.keywords || '无关键词';
+          
+          // 检查URL类型并显示相应的额外字段
+          const currentUrl = urlInput.value.trim();
+          
+          // 发布时间 - 今日头条和小红书都支持
+          if ((isToutiaoUrl(currentUrl) || isXhsUrl(currentUrl)) && 
+              data.publishTime && data.publishTime !== '未知时间' && data.publishTime !== '') {
+              publishTimeContent.textContent = data.publishTime;
+              publishTimeItem.style.display = 'block';
+          } else {
+              publishTimeItem.style.display = 'none';
+          }
+          
+          // 评论数和点赞数 - 只有今日头条支持
+          if (isToutiaoUrl(currentUrl)) {
+              if (data.commentCount && data.commentCount !== '0' && data.commentCount !== '') {
+                  commentCountContent.textContent = data.commentCount;
+                  commentCountItem.style.display = 'block';
+              } else {
+                  commentCountItem.style.display = 'none';
+              }
+              
+              if (data.likeCount && data.likeCount !== '0' && data.likeCount !== '') {
+                  likeCountContent.textContent = data.likeCount;
+                  likeCountItem.style.display = 'block';
+              } else {
+                  likeCountItem.style.display = 'none';
+              }
+          } else {
+              // 非今日头条URL隐藏评论数和点赞数
+              commentCountItem.style.display = 'none';
+              likeCountItem.style.display = 'none';
+          }
           
           resultSection.style.display = 'block';
           
@@ -381,7 +458,7 @@
           extractBtn.textContent = '提取中...';
 
           try {
-              const response = await fetch(`http://localhost:8081/extract?url=${encodeURIComponent(url)}`);
+              const response = await fetch(`/extract?url=${encodeURIComponent(url)}`);
               
               if (!response.ok) {
                   throw new Error(`HTTP错误: ${response.status}`);

@@ -34,7 +34,9 @@ public class BaijiahaoImpl implements BaijiahaoService {
             }
 
             // 提取正文
-            maintext = SeleniumUtil.getMultipleTextByCssSelector(driver, ".bjh-p");
+            maintext = SeleniumUtil.getMultipleTextByCssSelector(driver, ".bjh-p") +
+            SeleniumUtil.getMultipleTextByCssSelector(driver, "div.dpu8C._2kCxD");
+
             if (maintext.isEmpty()) {
                 String[] contentSelectors = {".content", "[class*='content']", ".article-content", ".text-content"};
                 maintext = SeleniumUtil.getTextByCssSelectors(driver, contentSelectors);

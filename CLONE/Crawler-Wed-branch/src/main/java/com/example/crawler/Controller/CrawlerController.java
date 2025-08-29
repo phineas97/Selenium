@@ -3,6 +3,8 @@ package com.example.crawler.Controller;
 import com.example.crawler.Config.Info;
 import com.example.crawler.Service.ToutiaoService;
 import com.example.crawler.Service.XHSService;
+import com.example.crawler.Service.BaijiahaoService;
+import com.example.crawler.Service.WechatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,13 +19,18 @@ import java.net.URL;
 public class CrawlerController {
 
     private final XHSService xhsservice;
-
     private final ToutiaoService toutiaoservice;
+    private final BaijiahaoService baijiahaoservice;
+    private final WechatService wechatservice;
 
     public CrawlerController(XHSService xhsService,
-                             ToutiaoService toutiaoService) {
+                             ToutiaoService toutiaoService,
+                             BaijiahaoService baijiahaoService,
+                             WechatService wechatService) {
         this.xhsservice = xhsService;
         this.toutiaoservice = toutiaoService;
+        this.baijiahaoservice = baijiahaoService;
+        this.wechatservice = wechatService;
     }
 
     @GetMapping("/extract")
@@ -34,8 +41,12 @@ public class CrawlerController {
 
         if ("www.xiaohongshu.com".equals(host)) {
             info = xhsservice.ExtractXHS(url);
-        }else if("www.toutiao.com".equals(host)) {
+        } else if("www.toutiao.com".equals(host)) {
             info = toutiaoservice.ExtractToutiao(url);
+        } else if("mbd.baidu.com".equals(host)) {
+            info = baijiahaoservice.ExtractBaijiahao(url);
+        } else if("mp.weixin.qq.com".equals(host)) {
+            info = wechatservice.ExtractWechat(url);
         } else {
             System.out.println("不支持的URL");
             return null;
@@ -47,7 +58,8 @@ public class CrawlerController {
     public String UrlCheck (String url) throws IOException {
         URL UrlCheck = new URL (url);
         String host = UrlCheck.getHost();
-        if ("www.xiaohongshu.com".equals(host) || "www.toutiao.com".equals(host)) {
+        if ("www.xiaohongshu.com".equals(host) || "www.toutiao.com".equals(host) || 
+            "mbd.baidu.com".equals(host) || "mp.weixin.qq.com".equals(host)) {
             return host;
         } else {
             return null;

@@ -250,6 +250,8 @@
         <div class="site-tags">
           <span class="site-tag">小红书 (xiaohongshu.com)</span>
           <span class="site-tag">今日头条 (toutiao.com)</span>
+          <span class="site-tag">百家号 (mbd.baidu.com)</span>
+          <span class="site-tag">微信公众号 (mp.weixin.qq.com)</span>
         </div>
       </div>
     </div>
@@ -339,23 +341,20 @@
           successMessage.style.display = 'block';
       }
 
-      // 检查是否为今日头条URL
-      function isToutiaoUrl(url) {
+      // 检查URL类型的函数
+      function getUrlType(url) {
           try {
               const urlObj = new URL(url);
-              return urlObj.hostname === 'www.toutiao.com';
+              const hostname = urlObj.hostname;
+              
+              if (hostname === 'www.toutiao.com') return 'toutiao';
+              if (hostname === 'www.xiaohongshu.com') return 'xiaohongshu';
+              if (hostname === 'mbd.baidu.com') return 'baijiahao';
+              if (hostname === 'mp.weixin.qq.com') return 'wechat';
+              
+              return 'unknown';
           } catch (_) {
-              return false;
-          }
-      }
-
-      // 检查是否为小红书URL
-      function isXhsUrl(url) {
-          try {
-              const urlObj = new URL(url);
-              return urlObj.hostname === 'www.xiaohongshu.com';
-          } catch (_) {
-              return false;
+              return 'unknown';
           }
       }
 
@@ -371,18 +370,18 @@
           
           // 检查URL类型并显示相应的额外字段
           const currentUrl = urlInput.value.trim();
+          const urlType = getUrlType(currentUrl);
           
-          // 发布时间 - 今日头条和小红书都支持
-          if ((isToutiaoUrl(currentUrl) || isXhsUrl(currentUrl)) && 
-              data.publishTime && data.publishTime !== '未知时间' && data.publishTime !== '') {
+          // 发布时间 - 所有平台都支持
+          if (data.publishTime && data.publishTime !== '未知时间' && data.publishTime !== '') {
               publishTimeContent.textContent = data.publishTime;
               publishTimeItem.style.display = 'block';
           } else {
               publishTimeItem.style.display = 'none';
           }
           
-          // 评论数和点赞数 - 只有今日头条支持
-          if (isToutiaoUrl(currentUrl)) {
+          // 评论数和点赞数 - 今日头条和百家号支持
+          if (urlType === 'toutiao' || urlType === 'baijiahao') {
               if (data.commentCount && data.commentCount !== '0' && data.commentCount !== '') {
                   commentCountContent.textContent = data.commentCount;
                   commentCountItem.style.display = 'block';
@@ -397,7 +396,7 @@
                   likeCountItem.style.display = 'none';
               }
           } else {
-              // 非今日头条URL隐藏评论数和点赞数
+              // 其他平台隐藏评论数和点赞数
               commentCountItem.style.display = 'none';
               likeCountItem.style.display = 'none';
           }
@@ -421,13 +420,8 @@
 
       // 检查是否为支持的网站
       function isSupportedSite(url) {
-          try {
-              const urlObj = new URL(url);
-              const hostname = urlObj.hostname;
-              return hostname === 'www.xiaohongshu.com' || hostname === 'www.toutiao.com';
-          } catch (_) {
-              return false;
-          }
+          const urlType = getUrlType(url);
+          return urlType !== 'unknown';
       }
 
 
@@ -447,7 +441,7 @@
           }
 
           if (!isSupportedSite(url)) {
-              showError('暂不支持该网站，目前仅支持小红书和今日头条');
+              showError('暂不支持该网站，目前支持：小红书、今日头条、百家号、微信公众号');
               return;
           }
 
@@ -458,6 +452,7 @@
           extractBtn.textContent = '提取中...';
 
           try {
+              const apiBaseUrl = window.location.origin;
               const response = await fetch(`/extract?url=${encodeURIComponent(url)}`);
               
               if (!response.ok) {

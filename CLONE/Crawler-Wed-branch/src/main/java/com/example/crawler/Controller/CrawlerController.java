@@ -5,7 +5,6 @@ import com.example.crawler.Service.ToutiaoService;
 import com.example.crawler.Service.XHSService;
 import com.example.crawler.Service.BaijiahaoService;
 import com.example.crawler.Service.WechatService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

@@ -12,9 +12,13 @@ import java.util.List;
 @Component
 public class SeleniumUtil {
 
-    private static ChromeOptions createChromeOptions() {
-        System.setProperty("webdriver.chrome.driver", "D:\\Drivers\\chromedriver-win64\\chromedriver.exe");
+    private static ChromeOptions createChromeOptions(String chromeDriverPath) {
+        if (chromeDriverPath != null && !chromeDriverPath.isEmpty()) {
+            System.setProperty("webdriver.chrome.driver", chromeDriverPath);
+        }
+        
         ChromeOptions options = new ChromeOptions();
+        // 基础配置
         options.addArguments("--disable-extensions");
         options.addArguments("--headless");
         options.addArguments("--window-size=1920,1080");
@@ -25,18 +29,25 @@ public class SeleniumUtil {
         options.addArguments("--incognito");
         options.addArguments("--disable-plugins");
         options.addArguments("--disable-images");
+        
+        // 反检测配置
         options.addArguments("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         options.addArguments("--disable-blink-features=AutomationControlled");
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
         options.setExperimentalOption("useAutomationExtension", false);
+        
         return options;
     }
 
     public static WebDriver createDriver() {
-        ChromeOptions options = createChromeOptions();
+        return createDriver(null, 30, 10);
+    }
+    
+    public static WebDriver createDriver(String chromeDriverPath, int pageLoadTimeout, int implicitWait) {
+        ChromeOptions options = createChromeOptions(chromeDriverPath);
         WebDriver driver = new ChromeDriver(options);
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(pageLoadTimeout));
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(implicitWait));
         return driver;
     }
 
